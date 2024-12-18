@@ -33,6 +33,7 @@ RCSID("$Id$")
 #include <freeradius-devel/util/misc.h>
 #include <freeradius-devel/util/sha1.h>
 #include <freeradius-devel/util/value.h>
+#include <freeradius-devel/util/argon2.h>
 
 #include <freeradius-devel/protocol/freeradius/freeradius.internal.password.h>
 
@@ -84,6 +85,7 @@ static fr_dict_attr_t const *attr_root;
 
 static fr_dict_attr_t const *attr_md5;
 static fr_dict_attr_t const *attr_smd5;
+static fr_dict_attr_t const *attr_argon2;
 static fr_dict_attr_t const *attr_crypt;
 
 static fr_dict_attr_t const *attr_sha1;
@@ -133,6 +135,7 @@ fr_dict_attr_autoload_t password_dict_attr[] = {
 
 	{ .out = &attr_md5, .name = "Password.MD5", .type = FR_TYPE_OCTETS, .dict = &dict_freeradius },
 	{ .out = &attr_smd5, .name = "Password.SMD5", .type = FR_TYPE_OCTETS, .dict = &dict_freeradius },
+	{ .out = &attr_argon2, .name = "Password.ARGON2", .type = FR_TYPE_OCTETS, .dict = &dict_freeradius },
 	{ .out = &attr_crypt, .name = "Password.Crypt", .type = FR_TYPE_STRING, .dict = &dict_freeradius },
 	{ .out = &attr_sha1, .name = "Password.SHA1", .type = FR_TYPE_OCTETS, .dict = &dict_freeradius },
 	{ .out = &attr_ssha1, .name = "Password.SSHA1", .type = FR_TYPE_OCTETS, .dict = &dict_freeradius },
@@ -196,13 +199,14 @@ static size_t password_type_table_len = NUM_ELEMENTS(password_type_table);
  *	@note Header comparison is case insensitive.
  */
 static fr_table_num_sorted_t const password_header_table[] = {
-	{ L("{base64_md5}"),			FR_MD5		},
+	{ L("{ARGON2}"),			FR_ARGON2 },
+	{ L("{base64_md5}"),		FR_MD5		},
 	{ L("{clear}"),				FR_CLEARTEXT	},
 	{ L("{cleartext}"),			FR_CLEARTEXT	},
 	{ L("{crypt}"),				FR_CRYPT	},
 	{ L("{md4}"),				FR_NT		},
 	{ L("{md5}"),				FR_MD5		},
-	{ L("{ns-mta-md5}"),			FR_NS_MTA_MD5	},
+	{ L("{ns-mta-md5}"),		FR_NS_MTA_MD5	},
 	{ L("{nt}"),				FR_NT		},
 	{ L("{nthash}"),			FR_NT		},
 
@@ -391,6 +395,11 @@ static password_info_t password_info[] = {
 						.type = PASSWORD_HASH_SALTED,
 						.da = &attr_ssha3_512,
 						.min_hash_len = SHA512_DIGEST_LENGTH
+					},
+    [FR_ARGON2]			= {
+						.type = PASSWORD_HASH,
+						.da = &attr_argon2,
+						.min_hash_len = ARGON2_MIN_OUTLEN
 					}
 #endif
 };

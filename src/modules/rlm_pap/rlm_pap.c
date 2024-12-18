@@ -37,6 +37,8 @@ USES_APPLE_DEPRECATED_API
 #include <freeradius-devel/util/base16.h>
 #include <freeradius-devel/util/md5.h>
 #include <freeradius-devel/util/sha1.h>
+#include <freeradius-devel/util/argon2.h>
+
 
 #include <freeradius-devel/unlang/call_env.h>
 
@@ -252,6 +254,21 @@ static unlang_action_t CC_HINT(nonnull) pap_auth_md5(rlm_rcode_t *p_result,
 	}
 
 	RETURN_MODULE_OK;
+}
+
+
+// FIXME: Untested
+static unlang_action_t CC_HINT(nonnull) pap_auth_argon2(rlm_rcode_t *p_result,
+						     UNUSED rlm_pap_t const *inst, request_t *request,
+						     fr_pair_t const *known_good, fr_value_box_t const *password)
+{
+	if (argon2_verify(known_good->vp_strvalue, password->vb_octets, password->vb_length, Argon2_i) == 0)
+	{
+		RETURN_MODULE_OK;
+	}
+
+	// TODO:  Return REDEBUG for Argon2_ErrorCodes
+	RETURN_MODULE_REJECT;
 }
 
 
@@ -862,6 +879,7 @@ static const pap_auth_func_t auth_func_table[] = {
 	[FR_CLEARTEXT]	= pap_auth_clear,
 	[FR_MD5]	= pap_auth_md5,
 	[FR_SMD5]	= pap_auth_smd5,
+	[FR_ARGON2]	= pap_auth_argon2,
 
 #ifdef HAVE_CRYPT
 	[FR_CRYPT]	= pap_auth_crypt,
