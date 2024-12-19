@@ -35,6 +35,7 @@ USES_APPLE_DEPRECATED_API
 
 #include "../../include/md5.h"
 #include "../../include/sha1.h"
+#include "../../include/argon2.h"
 
 #ifdef HAVE_OPENSSL_EVP_H
 #  include <openssl/evp.h>
@@ -80,6 +81,7 @@ static const FR_NAME_NUMBER header_names[] = {
 	{ "{base64_md5}",	PW_MD5_PASSWORD },
 	{ "{smd5}",		PW_SMD5_PASSWORD },
 	{ "{crypt}",		PW_CRYPT_PASSWORD },
+	{ "{ARGON2}",		PW_ARGON2_PASSWORD },
 #ifdef HAVE_OPENSSL_EVP_H
 	/*
 	 *	It'd make more sense for the headers to be
@@ -403,6 +405,7 @@ static rlm_rcode_t CC_HINT(nonnull) mod_authorize(void *instance, REQUEST *reque
 
 		case PW_CLEARTEXT_PASSWORD:
 		case PW_CRYPT_PASSWORD:
+		case PW_ARGON2_PASSWORD:
 		case PW_NS_MTA_MD5_PASSWORD:
 			found_pw = true;
 			break;	/* don't touch these */
@@ -615,6 +618,19 @@ static rlm_rcode_t CC_HINT(nonnull) pap_auth_md5(rlm_pap_t *inst, REQUEST *reque
 
 	if (rad_digest_cmp(digest, vp->vp_octets, vp->vp_length) != 0) {
 		REDEBUG("MD5 digest does not match \"known good\" digest");
+		return RLM_MODULE_REJECT;
+	}
+
+	return RLM_MODULE_OK;
+}
+
+static rlm_rcode_t CC_HINT(nonnull) pap_auth_argon2(rlm_pap_t *inst, REQUEST *request, VALUE_PAIR *vp)
+{
+	RDEBUG("Comparing with \"known-good\" ARGON2-Password");
+
+	if (argon2_verify(vp->vp_strvalue, request->password->vp_octets, request->password->vp_length, Argon2_i) != 0)
+	{
+		REDEBUG("ARGON2 digest does not match \"known good\" digest");
 		return RLM_MODULE_REJECT;
 	}
 
@@ -1327,6 +1343,10 @@ static rlm_rcode_t CC_HINT(nonnull) mod_authenticate(void *instance, REQUEST *re
 
 		case PW_SMD5_PASSWORD:
 			auth_func = &pap_auth_smd5;
+			break;
+
+		case PW_ARGON2_PASSWORD:
+			auth_func = &pap_auth_argon2;
 			break;
 
 #ifdef HAVE_OPENSSL_EVP_H
