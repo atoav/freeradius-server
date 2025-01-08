@@ -134,6 +134,7 @@ ATTRIBUTE	Virtual-Server				1099	string virtual
 ATTRIBUTE	Cleartext-Password			1100	string
 ATTRIBUTE	Password-With-Header			1101	string
 ATTRIBUTE	Inner-Tunnel-User-Name			1102	string
+ATTRIBUTE	Argon2-Password				9999	octets
 #
 #	EAP-IKEv2 is experimental.
 #
