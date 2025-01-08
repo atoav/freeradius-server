@@ -26,6 +26,7 @@ HEADERS	= \
 	libradius.h \
 	md4.h \
 	md5.h \
+	argon2.h \
 	modcall.h \
 	modules.h \
 	packet.h \
